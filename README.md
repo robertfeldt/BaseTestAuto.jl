@@ -1,2 +1,2 @@
 # BaseTestAuto.jl
-Extends the BaseTestNext.jl package to support many forms of automated testing
+An evolution of BaseTestNext.jl to support more automated forms of testing. We will gradually move code from the AutoTest.jl package (based in our software testing research) over to this package. The idea is to make as small changes as possible to the future Base.Test julia testing functionality while still adding value.
