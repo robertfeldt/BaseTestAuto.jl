@@ -139,9 +139,9 @@ function formattime(t)
 end
 
 function print_time_report(elapsed::Float64, ntestsets::Int, npass::Int, nfail::Int, nerr::Int)
-    testsetspersec = round(ntestsets/elapsed, 1)
-    assertionspersec = round((npass + nfail + nerr)/elapsed, 1)
-    print_with_color(:white, "\nFinished in $(formattime(elapsed)), $testsetspersec testsets/s, $assertionspersec assertions/s.\n")
+    tspsec = round(ntestsets/elapsed, 1)
+    aspsec = round((npass + nfail + nerr)/elapsed, 1)
+    print_with_color(:white, "\nFinished in $(formattime(elapsed)), $tspsec testsets/s, $aspsec assertions/s.\n")
 end
 
 # Recursive function that finds the column that the result counts
