@@ -15,6 +15,12 @@ TimedTestMaxFactor = (ENV["timedmaxfactor"] || 1000).to_i
 MainFile = "src/#{Lib}.jl"
 BaseCommand = "#{Julia} --color=yes -L #{MainFile}"
 
+desc "Run orig base/test.jl tests"
 task :origtest do
   sh "#{BaseCommand} test/orig_base_test_tests/test.jl"
+end
+
+desc "Run examples"
+task :examples do
+  sh "#{BaseCommand} examples/fixed_repeating_testset_example.jl"
 end
