@@ -11,7 +11,7 @@ type DefaultTestSet <: AbstractTestSet
     anynonpass::Bool
     repeats::Int # number of repeated runs of the tests, defaults to 1
     skip::Bool   # true iff we should not run tests in this testset, defaults to false
-    nprogress::Int
+    nprogress::Int # Count the num of progress reports so far
     starttime::Float64
 end
 DefaultTestSet(desc; repeats=1, skip=false) =
@@ -24,7 +24,7 @@ function record(ts::DefaultTestSet, t::Pass)
     t
 end
 
-function report_progress(ts::DefaultTestSet, ind::AbstractString, color)
+function report_progress(ts::DefaultTestSet, ind::AbstractString, color = :white)
     # Print description of testset if first progress report
     if ts.nprogress == 0
         print_with_color(:white, "\n\n" * ts.description, ": ")
@@ -34,6 +34,7 @@ function report_progress(ts::DefaultTestSet, ind::AbstractString, color)
 end
 
 function record(ts::DefaultTestSet, t::Fail)
+    report_progress(ts, "", :red) # Need to indicate the test set we are in...
     println()
     print(t)
     #Base.show_backtrace(STDOUT, backtrace())
@@ -45,6 +46,7 @@ end
 # For the other result types, immediately print the error message
 # but do not terminate. Print a backtrace.
 function record(ts::DefaultTestSet, t::Error)
+    report_progress(ts, "", :red) # Need to indicate the test set we are in...
     println()
     println(t)
     push!(ts.results, t)
