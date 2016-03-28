@@ -27,7 +27,7 @@ end
 function report_progress(ts::DefaultTestSet, ind::AbstractString, color)
     # Print description of testset if first progress report
     if ts.nprogress == 0
-        print_with_color(:white, "\n" * ts.description, ": ")
+        print_with_color(:white, "\n\n" * ts.description, ": ")
     end
     ts.nprogress += 1
     print_with_color(color, ind)
@@ -96,7 +96,9 @@ function finish(ts::DefaultTestSet)
     # recursively walking the tree of test sets
     align = max(get_alignment(ts, 0), length("Test Summary:"))
     # Print the outer test set header once
-    print_with_color(:white,    "\n" * ("-"^40) * "\n")
+    width = length("Test Summary:") + 
+        align + pass_width + fail_width + error_width + total_width
+    print_with_color(:white,    "\n" * ("-"^width) * "\n")
     print_with_color(:white, rpad("Test Summary:",align," "))
     print(" | ")
     if pass_width > 0
