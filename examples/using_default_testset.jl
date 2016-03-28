@@ -16,4 +16,11 @@ end
     @test 1 == (2-1)
     @test isa(Float64, 1)
   end
+
+  @testset skip=true repeats=3 "Skipped so no fails from it" begin
+    @test isa(Float64, 1)
+  end
+
+  @testset skip=false "Not skipped but no tests" begin
+  end
 end
