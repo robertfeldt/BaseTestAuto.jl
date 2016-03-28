@@ -11,21 +11,42 @@ type DefaultTestSet <: AbstractTestSet
     anynonpass::Bool
     repeats::Int # number of repeated runs of the tests, defaults to 1
     skip::Bool   # true iff we should not run tests in this testset, defaults to false
+    nprogress::Int
+    starttime::Float64
 end
 DefaultTestSet(desc; repeats=1, skip=false) =
-    DefaultTestSet(desc, [], false, repeats, skip)
+    DefaultTestSet(desc, [], false, repeats, skip, 0, time())
 
-# For a passing result, simply store the result
-record(ts::DefaultTestSet, t::Pass) = (push!(ts.results, t); t)
+# For a passing result, simply store the result and print an indication.
+function record(ts::DefaultTestSet, t::Pass)
+    report_progress(ts, ".", :white)
+    push!(ts.results, t)
+    t
+end
+
+function report_progress(ts::DefaultTestSet, ind::AbstractString, color)
+    # Print description of testset if first progress report
+    if ts.nprogress == 0
+        print_with_color(:white, "\n" * ts.description, ": ")
+    end
+    ts.nprogress += 1
+    print_with_color(color, ind)
+end
+
+function record(ts::DefaultTestSet, t::Fail)
+    println()
+    print(t)
+    Base.show_backtrace(STDOUT, backtrace())
+    println()
+    push!(ts.results, t)
+    t
+end
+
 # For the other result types, immediately print the error message
 # but do not terminate. Print a backtrace.
-function record(ts::DefaultTestSet, t::Union{Fail,Error})
-    print_with_color(:white, ts.description, ": ")
-    print(t)
-    # don't print the backtrace for Errors because it gets printed in the show
-    # method
-    isa(t, Error) || Base.show_backtrace(STDOUT, backtrace())
+function record(ts::DefaultTestSet, t::Error)
     println()
+    println(t)
     push!(ts.results, t)
     t
 end
@@ -44,6 +65,8 @@ end
 # Called at the end of a @testset, behaviour depends on whether
 # this is a child of another testset, or the "root" testset
 function finish(ts::DefaultTestSet)
+    elapsed_time = time() - ts.starttime
+
     # If we are a nested test set, do not print a full summary
     # now - let the parent test set do the printing
     if get_testset_depth() != 0
@@ -54,7 +77,7 @@ function finish(ts::DefaultTestSet)
     end
     # Calculate the overall number for each type so each of
     # the test result types are aligned
-    passes, fails, errors, c_passes, c_fails, c_errors = get_test_counts(ts)
+    passes, fails, errors, c_passes, c_fails, c_errors, testsets = get_test_counts(ts)
     total_pass  = passes + c_passes
     total_fail  = fails  + c_fails
     total_error = errors + c_errors
@@ -73,6 +96,7 @@ function finish(ts::DefaultTestSet)
     # recursively walking the tree of test sets
     align = max(get_alignment(ts, 0), length("Test Summary:"))
     # Print the outer test set header once
+    print_with_color(:white,    "\n" * ("-"^40) * "\n")
     print_with_color(:white, rpad("Test Summary:",align," "))
     print(" | ")
     if pass_width > 0
@@ -91,15 +115,33 @@ function finish(ts::DefaultTestSet)
         print_with_color(:blue, lpad("Total",total_width," "))
     end
     println()
-    # Recursively print a summary at every level
+    # Recursively print a summary at every level followed by the time report
     print_counts(ts, 0, align, pass_width, fail_width, error_width, total_width)
-    # Finally throw an error as we are the outermost test set
+    print_time_report(elapsed_time, testsets, total_pass, total_fail, total_error)
+
+    # Finally throw an error as we are the outermost test set, if not all passed
     if total != total_pass
         throw(TestSetException(total_pass,total_fail,total_error))
     end
 
     # return the testset so it is returned from the @testset macro
     ts
+end
+
+function formattime(t)
+    if t <= 5e-2
+        string(round(t/1e-3, 2)) * " ms"
+    elseif t >= 60.0
+        string(round(t/60.0, 2)) * " mins"
+    else
+        string(round(t, 2)) * " s"
+    end
+end
+
+function print_time_report(elapsed::Float64, ntestsets::Int, npass::Int, nfail::Int, nerr::Int)
+    testsetspersec = round(ntestsets/elapsed, 1)
+    assertionspersec = round((npass + nfail + nerr)/elapsed, 1)
+    print_with_color(:white, "\nFinished in $(formattime(elapsed)), $testsetspersec testsets/s, $assertionspersec assertions/s.\n")
 end
 
 # Recursive function that finds the column that the result counts
@@ -123,6 +165,7 @@ get_alignment(ts, depth::Int) = 0
 # Recursive function that counts the number of test results of each
 # type directly in the testset, and totals across the child testsets
 function get_test_counts(ts::DefaultTestSet)
+    testsets = 1 # We count this one
     passes, fails, errors = 0, 0, 0
     c_passes, c_fails, c_errors = 0, 0, 0
     for t in ts.results
@@ -130,14 +173,15 @@ function get_test_counts(ts::DefaultTestSet)
         isa(t, Fail)  && (fails  += 1)
         isa(t, Error) && (errors += 1)
         if isa(t, DefaultTestSet)
-            np, nf, ne, ncp, ncf, nce = get_test_counts(t)
+            np, nf, ne, ncp, ncf, nce, nts = get_test_counts(t)
             c_passes += np + ncp
             c_fails  += nf + ncf
             c_errors += ne + nce
+            testsets += nts
         end
     end
     ts.anynonpass = (fails + errors + c_fails + c_errors > 0)
-    return passes, fails, errors, c_passes, c_fails, c_errors
+    return passes, fails, errors, c_passes, c_fails, c_errors, testsets
 end
 
 # Recursive function that prints out the results at each level of
@@ -178,11 +222,7 @@ function print_counts(ts::DefaultTestSet, depth, align,
     end
 
     if np == 0 && nf == 0 && ne == 0
-        if ts.skip
-            print_with_color(:yellow, "Skipped")
-        else
-            print_with_color(:blue, "No tests")
-        end
+        print_with_color(:blue, (ts.skip ? "Skipped" : "No tests"))
     else
         print_with_color(:blue, lpad(string(subtotal), total_width, " "))
     end

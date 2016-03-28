@@ -9,12 +9,18 @@ end
   @test 1 == (2-1)
 end
 
+# We wrap and catch the exception thrown since we want to mimic
+# the normal runtests functionality.
+
+try
+
 @testset "Just using the default test set" begin
   @test true # An extra pass in the outer one to show reporting ok...
 
-  @testset repeats=3 "3 passes and 3 fails" begin
+  @testset repeats=3 "3 passes, 3 fails, and 3 errors" begin
     @test 1 == (2-1)
-    @test isa(Float64, 1)
+    @test isa(1, Float64) # Fail
+    @test isa(Float64, 1) # Error since 2nd arg is not a type
   end
 
   @testset skip=true repeats=3 "Skipped so no fails from it" begin
@@ -23,4 +29,8 @@ end
 
   @testset skip=false "Not skipped but no tests" begin
   end
+end
+
+catch err
+  # Silently kill it...
 end
