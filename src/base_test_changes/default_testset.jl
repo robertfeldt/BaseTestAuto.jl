@@ -36,7 +36,7 @@ end
 function record(ts::DefaultTestSet, t::Fail)
     println()
     print(t)
-    Base.show_backtrace(STDOUT, backtrace())
+    #Base.show_backtrace(STDOUT, backtrace())
     println()
     push!(ts.results, t)
     t
