@@ -1,0 +1,52 @@
+= Test assertions
+
+Test assertions (TAs) are implemented as separate types and takes care of the 
+sampling and checking of values given an expression to be asserted.
+
+TAs take care of the sampling of values by transforming the expression to be
+sampled into an expression which will be sampled by the @test macro code (since it 
+is executed in the context of where the macro is invoked). This transformation
+is done in a static function which is dispatched on the (symbol) name of the
+TA type.
+
+To define a new TA implement:
+
+- TAT
+  - a type that derives from DirectAssertion or MultiCheckAssertion
+- Select an EvaluationResult type ERT or implement one that derives from EvaluationResult
+  - a datum of this type will be returned from the sampling expression when it is evaluated
+- transform_to_sampling_expression(::Type{Val{:TAT}}, expr::Expr)
+  - returns the sampling expression that will be evaluated (in the code the @test macro expands to) and return the evaluation result that is then checked
+- check(::TAT, ::ERT)
+  - should check the sampled result value to see if the assertion is fulfilled
+- multicheck(::TAT)
+  - should perform the final check on all checked samples (for MultiCheckAssertions) at the end before the test set finishes
+
+== Sampling expression transformation
+Function: transform_to_sampling_expression(::Type{Val{:TAType}}, expr::Expr)
+where TAType is the name of the type of the TA.
+
+The returned expression should return an EvaluationResult datum when evaluated.
+This evaluation result is then checked in the check method of the TA.
+
+== Test assertion types
+
+- TestAssertion (abstract)
+  - DirectAssertion (abstract)
+    - PredicateTrueAssertion, a normal test predicate that should eval to true
+    - ComparisonAssertion, a comparison of values that should eval to true
+  - MultiCheckAssertion (abstract)
+    - AccumulatorAssertion, accumulates values and the performs a final check
+    - PerformanceAssertion, measures performance and ensures it is within bounds
+    - StochasticAssertion, accumulates values and then performs stochastic checks on them
+
+Even though the ComparisonAssertion can simply be implemented as a PredicateTrueAssertion
+we define it in order to do more detailed failure reporting when it does not hold.
+
+== EvaluationResult types
+
+- EvaluationResult
+  - Returned (abstract), when
+  - ExceptionThrown (abstract)
+    - SubExprThrewException, when an exception was thrown in a sub expression
+    - ThrewException, when an exception was thrown somehwere in the expression but we can't say where
