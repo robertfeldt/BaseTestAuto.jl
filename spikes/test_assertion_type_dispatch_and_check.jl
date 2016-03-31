@@ -128,7 +128,7 @@ println(check(PredicateTrueAssertion(), pres)[2])
 
 ctex = eval_expr(Val{:ComparisonAssertion}, ex)
 cres = eval(ctex)
-check(ComparisonAssertion(:(==)), cres)
+println(check(ComparisonAssertion(:(==)), cres)[2])
 
 # Exception thrown in lhs
 function te(e)
@@ -144,3 +144,63 @@ check(PredicateTrueAssertion(), pres)
 ctex = eval_expr(Val{:ComparisonAssertion}, ex)
 cres = eval(ctex)
 check(ComparisonAssertion(:(==)), cres)
+
+# Lets implement the basics of a performance assertion. It will evaluate the expression
+# while measuring the time taken and then ensure it is below some target value.
+type PerformanceAssertion <: TestAssertion
+    maxtime::Float64
+end
+
+immutable ReturnedP <: EvaluationResult
+    orig_expr
+    value
+    elapsed
+end
+
+function eval_expr(::Type{Val{:PerformanceAssertion}}, expr::Expr)
+    orig_ex = Expr(:quote, expr)
+    quote
+        try
+            st = time()
+            value = $expr
+            et = time()
+            return ReturnedP($orig_ex, value, et-st)
+        catch _e
+            return Threw($orig_ex, _e)
+        end
+    end
+end
+
+function formattime(t)
+    if t <= 5e-2
+        string(round(t/1e-3, 2)) * " ms"
+    elseif t >= 60.0
+        string(round(t/60.0, 2)) * " mins"
+    else
+        string(round(t, 2)) * " s"
+    end
+end
+
+function check(t::PerformanceAssertion, res::ReturnedP)
+    if (res.elapsed < t.maxtime)
+        (:pass)
+    else
+        hr = format_time(res.elapsed)
+        (:fail, "Execution time was $hr which is more than expected $(t.maxtime)")
+    end
+end
+
+function fut(n)
+    sum = 0.0
+    for i in 1:n
+        sum += i
+    end
+    sum
+end
+
+a = 2e5
+ex = :( fut(a) )
+
+petex = eval_expr(Val{:PerformanceAssertion}, ex)
+peres = eval(petex)
+println(check(PerformanceAssertion(1e-2), peres)[2])
