@@ -61,8 +61,9 @@ accvars_and_update(e, a) = (e, a)
     @test r4 == (:(a1 + 1 / (b1 * c1)), Any[:a, :b, :c])
 end
 
+iscall(ex) = isa(ex, Expr) && ex.head == :call
+
 @testset "filter expr" begin
-    iscall(ex) = isa(ex, Expr) && ex.head == :call
     @test iscall(:(fn(1))) == true
     @test iscall(:(a))     == false
 
@@ -74,6 +75,61 @@ end
     ex2 = :( f1(1, f2(f3(1)), f4(f5())) )
     r2 = filter(iscall, ex2)
     @test r2 == Any[:(f3(1)), :(f2(f3(1))), :(f5()), :(f4(f5())), ex2]
+end
+
+# Accumulate variables and calls while substituting them for temp var names.
+function acc_vars_and_calls_insert_tempvars(s::Symbol, acc)
+    tvar = subst_expr!(acc, s, gensym(), esc(s))
+    (tvar, acc)
+end
+function acc_vars_and_calls_insert_tempvars(e::Expr, acc)
+    if iscall(e)
+        tvar = subst_expr!(acc, e, gensym(), e)
+        (tvar, acc)
+    else
+        (e, acc)
+    end
+end
+acc_vars_and_calls_insert_tempvars(e, acc) = (e, acc) # For literals and other node types
+
+function subst_expr!(context, orig_ex, tempvar, ex)
+  idx = findfirst(t -> t[1] == orig_ex, context)
+  if idx > 0
+    return context[idx][2]
+  else
+    push!(context, (orig_ex, tempvar, ex))
+    return tempvar
+  end
+end
+
+@testset "accumulate vars and calls while substituting" begin
+    ex = :(1.5)
+    r1 = traverse_expr(ex, acc_vars_and_calls_insert_tempvars; update = true)
+    @test r1 == (ex, Any[])
+
+    ex2 = :(f(1))
+    r2 = traverse_expr(ex2, acc_vars_and_calls_insert_tempvars; update = true)
+    @test isa(r2[1], Symbol)
+    @test length(r2[2]) == 1
+    origex, tvar, substexpr = r2[2][1]
+    @test origex == ex2
+    @test isa(tvar, Symbol)
+    @test substexpr == ex2
+
+    ex3 = :(f(a))
+    r3 = traverse_expr(ex3, acc_vars_and_calls_insert_tempvars; update = true)
+    @test isa(r3[1], Symbol)
+    @test length(r3[2]) == 2
+
+    origex, tvar, substexpr = r3[2][1]
+    @test origex == :(a)
+    @test isa(tvar, Symbol)
+    @test substexpr == esc(:(a))
+
+    origex2, tvar2, substexpr2 = r3[2][2]
+    @test origex2 == :(f($tvar))
+    @test isa(tvar2, Symbol)
+    @test substexpr2 == :(f($tvar))
 end
 
 end

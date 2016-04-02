@@ -36,7 +36,7 @@ function traverse_expr(expr::Expr, fn = (ex,a) -> (ex, a), accumulator = Any[]; 
   return expr, accumulator
 end
 
-function traverse_expr(expr, fn = (ex,a) -> (ex, a), accumulator = nothing; update = false)
+function traverse_expr(expr, fn = (ex,a) -> (ex, a), accumulator = Any[]; update = false)
   fn(expr, accumulator)
 end
 
