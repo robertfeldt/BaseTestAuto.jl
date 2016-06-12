@@ -1,3 +1,5 @@
+using BaseTestAuto: traverse_expr
+
 @testset "traverse_expr" begin
 
 accumulate_vars(s::Symbol, a) = in(s, a) ? (s, a) : (s, push!(a, s))
@@ -69,11 +71,11 @@ iscall(ex) = isa(ex, Expr) && ex.head == :call
 
     ex = :(a + b)
     @test iscall(ex)       == true
-    r = filter(iscall, ex)
+    r = BaseTestAuto.filter(iscall, ex)
     @test r == Any[ex]
 
     ex2 = :( f1(1, f2(f3(1)), f4(f5())) )
-    r2 = filter(iscall, ex2)
+    r2 = BaseTestAuto.filter(iscall, ex2)
     @test r2 == Any[:(f3(1)), :(f2(f3(1))), :(f5()), :(f4(f5())), ex2]
 end
 
@@ -129,6 +131,7 @@ end
     origex2, tvar2, substexpr2 = r3[2][2]
     @test origex2 == :(f($tvar))
     @test isa(tvar2, Symbol)
+    @test tvar2 == r3[1]
     @test substexpr2 == :(f($tvar))
 end
 
