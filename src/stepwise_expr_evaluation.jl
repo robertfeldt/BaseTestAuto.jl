@@ -119,15 +119,15 @@ function q(ex::Expr)
   ex.head == :quote ? ex : Expr(:quote, ex)
 end
 
-function tempvarblock(orig_ex, orig_subexpr, tempvarname, subexpr, contextarray)
+function tempvarblock(orig_ex, orig_subexpr, tempvarname, subexpr, contextarrayname)
     ose = Expr(:quote, orig_subexpr)
     :(  
       if res == nothing
         try
             $tempvarname = $(subexpr)
-            push!($contextarray, ($ose, $tempvarname))
+            push!($contextarrayname, ($ose, $tempvarname))
         catch _e
-            res = Threw($orig_ex, $ose, _e, $contextarray)
+            res = Threw($orig_ex, $ose, _e, $contextarrayname)
         end
       end
     )
@@ -149,16 +149,19 @@ function build_stepwise_value_context_expr(expr::Expr)
 
   # Now create a block to evaluate expression in steps and return the trace.
   evalblock = Expr(:block)
+  evalblock.args = []
 
   # First stmt of block declares all temp vars local
-  evalblock.args = [Expr(:local, tempvars...)]
+  if length(tempvars) > 0
+    push!(evalblock.args, Expr(:local, tempvars...))
+  end
 
   # 2nd stmt of block declares result var local
   push!(evalblock.args, :(local res = nothing) )
 
   # 3rd stmt of block creates the context array which is initially empty
   contextarrayname = gensym("context")
-  push!( evalblock.args, :(local $contextarray = Any[]) )
+  push!( evalblock.args, :(local $contextarrayname = Any[]) )
 
   # Add an assignment per sub expression, each one in a try/catch so we can
   # pinpoint where the expression was raised if there is one. 
@@ -174,7 +177,8 @@ function build_stepwise_value_context_expr(expr::Expr)
   # Assign a normal return value if no exceptions so far during eval of sub expressions.
   push!(evalblock.args, :(
     if res == nothing
-      res = Returned($orig_expr, $toplevelvar, $contextarray)
+      toplevelvalue = ($toplevelvar)
+      res = Returned($orig_expr, toplevelvalue, $contextarrayname)
     end
   ))
   # And last stmt of the block returns
@@ -184,9 +188,11 @@ function build_stepwise_value_context_expr(expr::Expr)
   evalblock
 end
 
+global EmptyContextVal = Any[]
+
 # Very simple if the expression is a constant
 function build_stepwise_value_context_expr(constantexpr)
-  :(Returned($constantexpr, $constantexpr, Any[]))
+  :(Returned($constantexpr, $constantexpr, $EmptyContextVal))
 end
 
 #

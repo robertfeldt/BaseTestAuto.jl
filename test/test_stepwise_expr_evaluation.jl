@@ -1,4 +1,11 @@
 using BaseTestAuto: subst_expr!, split_in_subexpressions
+using BaseTestAuto: build_stepwise_value_context_expr, Returned, Threw
+
+macro stepwise_eval(expr)
+    stepwiseexpr = build_stepwise_value_context_expr(expr)
+    #@show expr stepwiseexpr
+    stepwiseexpr
+end
 
 @testset "Stepwise Expression Evaluation" begin
 
@@ -154,125 +161,197 @@ end
     @test length(trace) == 0
 end
 
+@testset "build_stepwise_value_context_expr" begin
+
+@testset "constant Int expression" begin
+    r = @stepwise_eval 1
+    @test isa(r, Returned)
+    @test r.value == 1
+    @test length(r.context) == 0
 end
 
-#@testset "split_in_subexpressions" begin
+@testset "constant Float expression" begin
+    r = @stepwise_eval 2.35
+    @test isa(r, Returned)
+    @test r.value == 2.35
+    @test length(r.context) == 0
+end
 
-#@testset "split_in_intermediate_exprs" begin
-#
-#
-#
-#end
-#
-#@testset "build_stepwise_value_context_expr" begin
-#
-#@testset "constant Int expression" begin
-#    r = @stepwise 1
-#    @test isa(r, Returned)
-#    @test r.value == 1
-#    @test length(r.context) == 0
-#end
-#
-#@testset "constant String expression" begin
-#    r = @stepwise "arne"
-#    @test isa(r, Returned)
-#    @test r.value == "arne"
-#    @test length(r.context) == 0
-#end
-#
-#@testset "constant Float64 expression" begin
-#    r = @stepwise 42.56
-#    @test isa(r, Returned)
-#    @test r.value == 42.56
-#    @test length(r.context) == 0
-#end
-#
-#@testset "constant Array expressions" begin
-#    r1 = @stepwise Any[]
-#    @test isa(r1, Returned)
-#    @test r1.value == Any[]
-#    @test length(r1.context) == 1
-#
-#    r2 = @stepwise Any[1]
-#    @test isa(r2, Returned)
-#    @test r2.value == Any[1]
-#    @test length(r2.context) == 1
-#end
-#
-#@testset "true predicate with single var" begin
-#    a = 1
-#    r = @stepwise a == 1
-#    @test isa(r, Returned)
-#    @test r.value == true
-#    @test length(r.context) == 2
-#    c1 = r.context[1]
-#    @test isa(c1, Tuple)
-#    @test c1[1] == :a
-#    @test c1[2] == 1
-#    c2 = r.context[2]
-#    @test isa(c2, Tuple)
-#    @test c2[1] == :(a == 1)
-#    @test c2[2] == true
-#end
-#
-#@testset "false predicate with single var" begin
-#    a = 4.0
-#    r = @stepwise 2 == a
-#    @test isa(r, Returned)
-#    @test r.value == false
-#    @test length(r.context) == 2
-#    c1 = r.context[1]
-#    @test isa(c1, Tuple)
-#    @test c1[1] == :a
-#    @test c1[2] == 4.0
-#    c2 = r.context[2]
-#    @test isa(c2, Tuple)
-#    @test c2[1] == :(2 == a)
-#    @test c2[2] == false
-#end
-#
-#@testset "predicate with undefined var, empty context" begin
-#    r = @stepwise b == 1
-#    @test isa(r, Threw)
-#    @test r.orig_expr == :(b == 1)
-#    @test r.subexpr == :(b) # Subexpr for which exception was thrown
-#    @test isa(r.exception, UndefVarError)
-#    @test length(r.context) == 0
-#end
-#
-#@testset "predicate with undefined var, non-empty context" begin
-#    a = 42
-#    r = @stepwise a == b
-#    @test isa(r, Threw)
-#    @test r.orig_expr == :(a == b)
-#    @test r.subexpr == :(b) # Subexpr for which exception was thrown
-#    @test isa(r.exception, UndefVarError)
-#    @test length(r.context) == 1
-#    c1 = r.context[1]
-#    @test isa(c1, Tuple)
-#    @test c1[1] == :a
-#    @test c1[2] == 42
-#end
-#
-#@testset "true predicate with three vars in array" begin
-#    a = 1
-#    b = 2
-#    c = Any[a, b+a]
-#    r = @stepwise c == Any[a, a+b]
-#    #@show r
-#    @test isa(r, Returned)
-#    @test r.value == true
-#    @test length(r.context) == 5
-#    #c1 = r.context[1]
-#    #@test isa(c1, Tuple)
-#    #@test c1[1] == :a
-#    #@test c1[2] == Any[1]
-#    #c2 = r.context[2]
-#    #@test isa(c2, Tuple)
-#    #@test c2[1] == :(a == Any[1])
-#    #@test c2[2] == true
-#end
-#
-#end
+@testset "constant String expression" begin
+    r = @stepwise_eval "arne"
+    @test isa(r, Returned)
+    @test r.value == "arne"
+    @test length(r.context) == 0
+end
+
+@testset "constant Array expressions" begin
+    r1 = @stepwise_eval Any[]
+    @test isa(r1, Returned)
+    @test r1.value == Any[]
+    @test length(r1.context) == 0
+
+    r2 = @stepwise_eval Any[1]
+    @test isa(r2, Returned)
+    @test r2.value == Any[1]
+    @test length(r2.context) == 0
+end
+
+@testset "true predicate with single var" begin
+    a = 1
+    r = @stepwise_eval a == 1
+    @test isa(r, Returned)
+    @test r.value == true
+    @test length(r.context) == 1
+
+    c1 = r.context[1]
+    @test isa(c1, Tuple)
+    @test c1[1] == :a
+    @test c1[2] == 1
+end
+
+@testset "false predicate with two vars" begin
+    a = 2
+    b = 2.45
+    r = @stepwise_eval a >= b
+    @test isa(r, Returned)
+    @test r.value == false
+    @test length(r.context) == 2
+
+    c1 = r.context[1]
+    @test isa(c1, Tuple)
+    @test c1[1] == :a
+    @test c1[2] == 2
+
+    c2 = r.context[2]
+    @test isa(c2, Tuple)
+    @test c2[1] == :b
+    @test c2[2] == 2.45
+end
+
+@testset "predicate with undefined var, empty context" begin
+    r = @stepwise_eval c == 1
+    @test isa(r, Threw)
+    @test r.orig_expr == :(c == 1)
+    @test r.subexpr == :(c) # Subexpr for which exception was thrown
+    @test isa(r.exception, UndefVarError)
+    @test length(r.context) == 0
+end
+
+@testset "predicate with undefined var, non-empty context" begin
+    a = 42
+    r = @stepwise_eval a == d
+    @test isa(r, Threw)
+    @test r.orig_expr == :(a == d)
+    @test r.subexpr == :(d) # Subexpr for which exception was thrown
+    @test isa(r.exception, UndefVarError)
+    @test length(r.context) == 1
+
+    c1 = r.context[1]
+    @test isa(c1, Tuple)
+    @test c1[1] == :a
+    @test c1[2] == 42
+end
+
+@testset "true predicate with three vars partly in array" begin
+    a = 1
+    b = 2
+    c = Any[a, b+a]
+    r = @stepwise_eval Any[a, a+b] == c
+
+    @test isa(r, Returned)
+    @test r.value == true
+    @test length(r.context) == 4
+
+    c1 = r.context[1]
+    @test isa(c1, Tuple)
+    @test c1[1] == :a
+    @test c1[2] == 1
+
+    c2 = r.context[2]
+    @test isa(c2, Tuple)
+    @test c2[1] == :b
+    @test c2[2] == 2
+
+    c3 = r.context[3]
+    @test isa(c3, Tuple)
+    @test c3[1] == :(a + b)
+    @test c3[2] == 3
+
+    c4 = r.context[4]
+    @test isa(c4, Tuple)
+    @test c4[1] == :c
+    @test c4[2] == Any[1, 3]
+end
+
+@testset "false predicate, func call" begin
+    a = 1
+    f(x) = x+1
+    r = @stepwise_eval f(a) == 3
+
+    @test isa(r, Returned)
+    @test r.value == false
+    @test length(r.context) == 2
+
+    c1 = r.context[1]
+    @test isa(c1, Tuple)
+    @test c1[1] == :a
+    @test c1[2] == 1
+
+    c2 = r.context[2]
+    @test isa(c2, Tuple)
+    @test c2[1] == :(f(a))
+    @test c2[2] == 2
+end
+
+@testset "true predicate, func call, const expressions and vars" begin
+    a = 1
+    b = 2.3
+    f(x) = x+1
+    g(x) = x^2
+    r = @stepwise_eval g(f(a)+b) > (1+1+2.2)^2 
+
+    @test isa(r, Returned)
+    @test r.value == true
+    @test length(r.context) == 7
+
+    c1 = r.context[1]
+    @test isa(c1, Tuple)
+    @test c1[1] == :a
+    @test c1[2] == 1
+
+    c2 = r.context[2]
+    @test isa(c2, Tuple)
+    @test c2[1] == :(f(a))
+    @test c2[2] == 2
+
+    c3 = r.context[3]
+    @test isa(c3, Tuple)
+    @test c3[1] == :(b)
+    @test c3[2] == 2.3
+
+    c4 = r.context[4]
+    @test isa(c4, Tuple)
+    @test c4[1] == :(f(a) + b)
+    @test c4[2] == 4.3
+
+    c5 = r.context[5]
+    @test isa(c5, Tuple)
+    @test c5[1] == :(g(f(a) + b))
+    @test c5[2] == (4.3^2)
+
+    c6 = r.context[6]
+    @test isa(c6, Tuple)
+    @test c6[1] == :(1+1+2.2)
+    @test c6[2] == (1+1+2.2)
+
+    c7 = r.context[7]
+    @test isa(c7, Tuple)
+    @test c7[1] == :((1+1+2.2) ^ 2)
+    @test c7[2] == (1+1+2.2)^2
+end
+
+end
+
+end
 
 end
