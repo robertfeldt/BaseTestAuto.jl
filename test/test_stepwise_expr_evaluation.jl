@@ -3,7 +3,7 @@ using BaseTestAuto: build_stepwise_value_context_expr, Returned, Threw
 
 macro stepwise_eval(expr)
     stepwiseexpr = build_stepwise_value_context_expr(expr)
-    #@show expr stepwiseexpr
+    @show expr stepwiseexpr
     stepwiseexpr
 end
 
@@ -348,6 +348,53 @@ end
     @test isa(c7, Tuple)
     @test c7[1] == :((1+1+2.2) ^ 2)
     @test c7[2] == (1+1+2.2)^2
+end
+
+@testset "exception in func call, no vars" begin
+    f(x) = (x < 2) ? throw(ArgumentError("some problem")) : x+1
+    r = @stepwise_eval f(0) == 1
+    @test isa(r, Threw)
+    @test r.orig_expr == :(f(0) == 1)
+    @test r.subexpr == :(f(0)) # Subexpr for which exception was thrown
+    @test isa(r.exception, ArgumentError)
+    @test length(r.context) == 0
+end
+
+@testset "exception in func call, one var" begin
+    a = 1
+    f(x) = (x < 2) ? throw(ArgumentError("some problem")) : x+1
+    r = @stepwise_eval f(a) == 2
+
+    @test isa(r, Threw)
+    @test r.orig_expr == :(f(a) == 2)
+    @test r.subexpr == :(f(a)) # Subexpr for which exception was thrown
+    @test isa(r.exception, ArgumentError)
+    @test length(r.context) == 1
+
+    c1 = r.context[1]
+    @test isa(c1, Tuple)
+    @test c1[1] == :a
+    @test c1[2] == 1
+end
+
+@testset "exception in func call, many levels and vars" begin
+    a = 1
+    b = 3.4
+    f(x) = (x < 2) ? throw(ArgumentError("some problem")) : x+1
+    g(x) = x^2
+    expected = (1+1+3.4)^2
+    r = @stepwise_eval g(f(a)+b) == expected
+
+    @test isa(r, Threw)
+    @test r.orig_expr == :(g(f(a)+b) == expected)
+    @test r.subexpr == :(f(a)) # Subexpr for which exception was thrown
+    @test isa(r.exception, ArgumentError)
+    @test length(r.context) == 1
+
+    c1 = r.context[1]
+    @test isa(c1, Tuple)
+    @test c1[1] == :a
+    @test c1[2] == 1
 end
 
 end
