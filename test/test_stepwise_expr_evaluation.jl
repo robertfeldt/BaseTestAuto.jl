@@ -3,7 +3,7 @@ using BaseTestAuto: build_stepwise_value_context_expr, Returned, Threw
 
 macro stepwise_eval(expr)
     stepwiseexpr = build_stepwise_value_context_expr(expr)
-    @show expr stepwiseexpr
+    #@show expr stepwiseexpr
     stepwiseexpr
 end
 
