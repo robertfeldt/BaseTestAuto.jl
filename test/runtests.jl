@@ -7,8 +7,48 @@ else
     const Test = BaseTestNext
 end
 
+# walkdir function copied from julia 0.5 repo. Not yet in 0.4
+function walkdir(root; topdown=true, follow_symlinks=false, onerror=throw)
+    content = nothing
+    try
+        content = readdir(root)
+    catch err
+        isa(err, SystemError) || throw(err)
+        onerror(err)
+        #Need to return an empty task to skip the current root folder
+        return Task(()->())
+    end
+    dirs = Array(eltype(content), 0)
+    files = Array(eltype(content), 0)
+    for name in content
+        if isdir(joinpath(root, name))
+            push!(dirs, name)
+        else
+            push!(files, name)
+        end
+    end
+
+    function _it()
+        if topdown
+            produce(root, dirs, files)
+        end
+        for dir in dirs
+            path = joinpath(root,dir)
+            if follow_symlinks || !islink(path)
+                for (root_l, dirs_l, files_l) in walkdir(path, topdown=topdown, follow_symlinks=follow_symlinks, onerror=onerror)
+                    produce(root_l, dirs_l, files_l)
+                end
+            end
+        end
+        if !topdown
+            produce(root, dirs, files)
+        end
+    end
+    Task(_it)
+end
+
 function runtestsindir(dir, testFileRegex = r"^test_.*\.jl$")
-  for (root, dirs, files) in walkdir(".")
+  for (root, dirs, files) in walkdir(dir)
     # Run tests in this dir that matches `testFileRegex`
     for file in files
       if ismatch(testFileRegex, file)
@@ -22,6 +62,14 @@ function runtestsindir(dir, testFileRegex = r"^test_.*\.jl$")
   end
 end
 
-@testset "Testing BaseTestAuto" begin
-  runtestsindir(dirname(@__FILE__()))
+TestDir = dirname(@__FILE__()) * "/"
+
+@testset "BaseTestAuto test suite" begin
+  #runtestsindir(dirname(@__FILE__()))
+  include(TestDir * "test_traverse_expression.jl")
+  include(TestDir * "test_predicate_true_assertion.jl")
+  include(TestDir * "test_stepwise_expr_evaluation.jl")
+  include(TestDir * "test_accumulator_assertion.jl")
+  #include(TestDir * "test_common_accumulator_assertions.jl")
+  #include(TestDir * "test_test_macro.jl")
 end
