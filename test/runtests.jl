@@ -66,10 +66,10 @@ TestDir = dirname(@__FILE__()) * "/"
 
 @testset "BaseTestAuto test suite" begin
   #runtestsindir(dirname(@__FILE__()))
-  include(TestDir * "test_traverse_expression.jl")
   include(TestDir * "test_predicate_true_assertion.jl")
-  include(TestDir * "test_stepwise_expr_evaluation.jl")
   include(TestDir * "test_accumulator_assertion.jl")
-  #include(TestDir * "test_common_accumulator_assertions.jl")
+  include(TestDir * "test_common_multi_values_assertions.jl")
+  include(TestDir * "test_traverse_expression.jl")
+  include(TestDir * "test_stepwise_expr_evaluation.jl")
   #include(TestDir * "test_test_macro.jl")
 end

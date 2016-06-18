@@ -1,4 +1,4 @@
-using BaseTestAuto: AccumulatorAssertion, check, NoDecision, multicheck, isfulfilled
+using BaseTestAuto: AccumulatorAssertion, check, NoDecision, multicheck, isfinalized
 
 @testset "AccumulatorAssertion" begin
 
@@ -29,9 +29,9 @@ got_one_value(vs) = length(vs) == 1
     o4 = multicheck(ta)
     @test isa(o4, Fail)
 
-    # The default multi value assertion is never fulfilled even if it would
+    # The default multi value assertion is never finalized even if it would
     # actually not make sense to continue accumulating values in this particular one...
-    @test isfulfilled(ta) == false 
+    @test isfinalized(ta) == false 
 end
 
 @testset "using a Set accumulator" begin
@@ -47,6 +47,7 @@ end
     @test isa(multicheck(ta), Pass)
     o3 = check(ta, Returned(:(b), 2, Any[(:b, 1)]))
     @test isa(multicheck(ta), Fail)
+    @test isfinalized(ta) == false
 end
 
 end
