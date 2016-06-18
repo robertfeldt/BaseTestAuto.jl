@@ -12,7 +12,7 @@ TA type.
 To define a new TA implement:
 
 - TAT
-  - a type that derives from DirectAssertion or MultiCheckAssertion
+  - a type that derives from DirectAssertion or MultiAssertion
 - Select an EvaluationResult type ERT or implement one that derives from EvaluationResult
   - a datum of this type will be returned from the sampling expression when it is evaluated
 - transform_to_sampling_expression(::Type{Val{:TAT}}, expr::Expr)
@@ -20,7 +20,17 @@ To define a new TA implement:
 - check(::TAT, ::ERT)
   - should check the sampled result value to see if the assertion is fulfilled
 - multicheck(::TAT)
-  - should perform the final check on all checked samples (for MultiCheckAssertions) at the end before the test set finishes
+  - should perform the final check on all checked samples (for MultiAssertions) at the end before the test set finishes
+
+- An assertion is either fulfilled or not, regardless if its a single sampled or multi sampled assertion.
+- A direct assertion can only be fulfilled (or not) depending on a single sampled value.
+- A multi assertion needs one or more sampled values before it can be fulfilled or not. It keeps some state to judge if its fulfilled or not.
+- If an assertion is finalized (isfinalized() is true) it can no longer change regardless of how many new samples are added; it will stay a Pass or a Fail. Thus we need no longer take any samples or check the condition. 
+  - DirectAssertions are never finalized. They can always take new samples and check based on that.
+
+If you need custom description of what went wrong implement:
+
+- show(::IO, ::TAT, ::Fail) to return a string used to describe what went wrong
 
 == Sampling expression transformation
 Function: transform_to_sampling_expression(::Type{Val{:TAType}}, expr::Expr)
@@ -35,7 +45,7 @@ This evaluation result is then checked in the check method of the TA.
   - DirectAssertion (abstract)
     - PredicateTrueAssertion, a normal test predicate that should eval to true
     - ComparisonAssertion, a comparison of values that should eval to true
-  - MultiCheckAssertion (abstract)
+  - MultiAssertion (abstract)
     - AccumulatorAssertion, accumulates values and the performs a final check
     - PerformanceAssertion, measures performance and ensures it is within bounds
     - StochasticAssertion, accumulates values and then performs stochastic checks on them
@@ -46,7 +56,6 @@ we define it in order to do more detailed failure reporting when it does not hol
 == EvaluationResult types
 
 - EvaluationResult
-  - Returned (abstract), when
-  - ExceptionThrown (abstract)
-    - SubExprThrewException, when an exception was thrown in a sub expression
-    - ThrewException, when an exception was thrown somehwere in the expression but we can't say where
+  - Returned, when a value is returned normally when evaluating the sampled expression
+  - Threw, when an exception was thrown when evaluating the sampled expression
+
