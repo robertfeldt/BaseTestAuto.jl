@@ -24,3 +24,14 @@ desc "Run examples"
 task :examples do
   sh "#{BaseCommand} examples/fixed_repeating_testset_example.jl"
 end
+
+desc "Test BaseTestAuto with Base.Test tests"
+task :test do
+  sh "#{BaseCommand} test/runtests.jl"
+end
+
+task :t do
+  sh "julia --color=yes test/temptest.jl"
+end
+
+task :default => :test
