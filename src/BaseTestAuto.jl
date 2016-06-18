@@ -6,31 +6,27 @@ but with support for test data generation, repeated testing etc.
 module BaseTestAuto
 
 #
-# We either use the orig part of base/test.jl, or we extend it. We possibly
-# also read in new additions.
+# We either use the orig part of base/test.jl, or we supplant/extend it.
 #
 
-# Test results have a richer hierarchy since we add ValuesAssertions that checks
+# Test results have a richer hierarchy since we add MultiAssertions that checks
 # their assertion based on multiple samples of the tested expression. Thus
 # we change both the result types and the test macro and include the basic three
 # types of assertions.
+
 #include("orig_base_test_parts/test_result.jl")
 #include("orig_base_test_parts/test_macro.jl")
 #include("orig_base_test_parts/test_throws_macro.jl")
 include("base_test_changes/test_result.jl")
 include("assertion_types/test_assertion.jl")
 include("assertion_types/test_assertion_base_api.jl")
-
 include("assertion_types/predicate_true_assertion.jl")
-#include("assertion_types/expected_value_assertion.jl")
-#include("assertions/exception_thrown_assertion.jl")
+include("assertion_types/exception_thrown_assertion.jl")
 include("assertion_types/accumulator_assertion.jl")
-
 include("base_test_changes/test_macro.jl")
 include("base_test_changes/test_throws_macro.jl")
 
 include("orig_base_test_parts/abstract_testset.jl")
-
 include("orig_base_test_parts/fallback_testset.jl")
 
 #include("orig_base_test_parts/default_testset.jl")
@@ -41,10 +37,11 @@ include("orig_base_test_parts/testset_macros.jl")
 #include("orig_base_test_parts/testset_helper_methods.jl")
 include("base_test_changes/testset_helper_methods.jl")
 
-include("orig_base_test_parts/legacy_testing_methods.jl")
+#include("orig_base_test_parts/legacy_testing_methods.jl")
 
-
-# Fully new stuff
+#
+# New stuff
+#
 include(joinpath("utils", "traverse_expression.jl"))
 include("stepwise_expr_evaluation.jl")
 
