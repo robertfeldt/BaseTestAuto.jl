@@ -1,4 +1,6 @@
 type PredicateTrueAssertion <: TestAssertion
+    options::AssertionOptions
+    PredicateTrueAssertion() = new(empty_assertion_options())
 end
 
 function transform_to_sampling_expression(::Type{Val{:PredicateTrueAssertion}}, expr::Expr)

@@ -41,6 +41,27 @@ end
     might affects its status. """
 isfinalized(ta::TestAssertion) = false
 
+""" Assertions can have options. """
+typealias AssertionOptions Dict{Symbol, Any}
+
+empty_assertion_options() = Dict{Symbol, Any}()
+
+function set_options(ta::TestAssertion, options::AssertionOptions)
+    if in(:options, fieldnames(ta))
+        for (key, val) in options
+            ta.options[key] = val
+        end
+    else
+        throw(ArgumentError("Trying to set options on a test assertion (of type $(typeof(ta))) that has no options field"))
+    end
+end
+
+# Short hand getters for common options
+shouldskip(ta::TestAssertion) = get(ta.options, :skip, false)
+isbroken(ta::TestAssertion) = get(ta.options, :broken, false)
+file(ta::TestAssertion) = get(ta.options, :file, "<unknown file>")
+line(ta::TestAssertion) = get(ta.options, :line, "<unknown line>")
+
 #
 # Default ways of reporting on assertion outcomes
 #

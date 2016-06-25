@@ -1,5 +1,5 @@
 using BaseTestAuto: PredicateTrueAssertion, check, Returned, Pass, Threw, Fail, Error
-using BaseTestAuto: TestAssertion
+using BaseTestAuto: TestAssertion, set_options, file, line, isbroken, shouldskip
 
 @testset "PredicateTrueAssertion" begin
 
@@ -60,6 +60,34 @@ end
     @test ismatch(r"Expected value:     true", res)
     @test ismatch(r"With subexpressions", res)
     @test ismatch(r"a = 2", res)
+end
+
+@testset "setting/getting options" begin
+    @testset "no options set" begin
+        ta = PredicateTrueAssertion()
+        @test file(ta) == "<unknown file>"
+        @test line(ta) == "<unknown line>"
+        @test shouldskip(ta) == false
+        @test isbroken(ta) == false
+    end
+
+    @testset "file and line options set" begin
+        ta = PredicateTrueAssertion()
+        set_options(ta, Dict(:file => "myfile.jl", :line => 14))
+        @test file(ta) == "myfile.jl"
+        @test line(ta) == 14
+        @test shouldskip(ta) == false
+        @test isbroken(ta) == false
+    end
+
+    @testset "file and skip options set" begin
+        ta = PredicateTrueAssertion()
+        set_options(ta, Dict(:file => "myfile.jl", :skip => true))
+        @test file(ta) == "myfile.jl"
+        @test line(ta) == "<unknown line>"
+        @test shouldskip(ta) == true
+        @test isbroken(ta) == false
+    end
 end
 
 end
