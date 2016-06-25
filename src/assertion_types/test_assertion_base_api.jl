@@ -71,10 +71,13 @@ function Base.show(io::IO, a::TestAssertion, t::Error)
         println(io, "  Expression: ", t.orig_expr)
         print(  io, "       Value: ", t.value)
     elseif t.error_type == :test_error
-        println(io, "  Test threw an exception of type ", typeof(t.value))
-        println(io, "  Expression: ", t.orig_expr)
+        evres = t.evaluationresult
+        println(io, "  Test threw an exception of type ", typeof(evres.exception))
+        println(io, "  In expression:   ", evres.orig_expr)
+        println(io, "  When evaluating: ", evres.subexpr)
+        print_context(io, evres.context, 4)
         # Capture error message and indent to match
-        errmsg = sprint(showerror, t.value, t.backtrace)
+        errmsg = sprint(showerror, evres.exception, t.backtrace)
         print(io, join(map(line->string("  ",line),
                             split(errmsg, "\n")), "\n"))
     elseif t.error_type == :nontest_error

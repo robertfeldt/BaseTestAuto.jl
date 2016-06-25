@@ -33,13 +33,6 @@ end
     @test outcome.testassertion == ta
 end
 
-# Convenience function to get what is shown on an IO back as a string.
-function show_to_string(a::TestAssertion, o)
-    io = IOBuffer()
-    show(io, a, o)
-    takebuf_string(io)
-end
-
 @testset "show failed assertion, empty context" begin
     ta = PredicateTrueAssertion()
     outcome = check(ta, Returned(:(false), false, Any[]))

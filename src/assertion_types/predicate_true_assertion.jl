@@ -22,14 +22,18 @@ function report_value_mismatch(io::IO, expr, expected, actual, context)
     print_context(io, context)
 end
 
-function print_context(io::IO, context)
+function print_context(io::IO, context, indent = 0)
     if length(context) > 0
-        println(io, "With subexpressions that evaluated to:")
+        istr = " " ^ indent
+        println(io, istr, "With subexpressions that evaluated to:")
         for (expr, value) in context
-            println(io, "  ", expr, " = ", value)
+            println(io, istr, "  ", expr, " = ", esc_value(value))
         end
     end
 end
+
+esc_value(x) = x
+esc_value(x::AbstractString) = "\"" * x * "\""
 
 function Base.show(io::IO, a::PredicateTrueAssertion, o::Fail)
     if isa(o.evaluationresult, Returned)

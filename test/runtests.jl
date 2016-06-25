@@ -64,11 +64,17 @@ end
 
 TestDir = dirname(@__FILE__())
 
+include(joinpath(TestDir, "helper.jl"))
+
 @testset "BaseTestAuto test suite" begin
+  include(joinpath(TestDir, "test_test_assertion.jl"))
   include(joinpath(TestDir, "test_predicate_true_assertion.jl"))
+  include(joinpath(TestDir, "test_exception_thrown_assertion.jl"))
   include(joinpath(TestDir, "test_accumulator_assertion.jl"))
   include(joinpath(TestDir, "test_common_multi_values_assertions.jl"))
+
   include(joinpath(TestDir, "test_traverse_expression.jl"))
   include(joinpath(TestDir, "test_stepwise_expr_evaluation.jl"))
-  #include(joinpath(TestDir, "test_test_macro.jl")
+
+  include(joinpath(TestDir, "test_test_macro.jl"))
 end
