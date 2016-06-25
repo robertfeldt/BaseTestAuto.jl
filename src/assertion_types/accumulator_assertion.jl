@@ -9,8 +9,9 @@ type AccumulatorAssertion <: MultiAssertion
     accumulator
     errormessageFn::Function
     firstsampled # We save the first sampled value since we might need to access the sampled expression in error reporting
+    options::AssertionOptions
     AccumulatorAssertion(checkFn::Function, acc = Any[], errormessageFn::Function = (acc) -> "") = begin
-        new(checkFn, acc, errormessageFn, nothing)
+        new(checkFn, acc, errormessageFn, nothing, empty_assertion_options())
     end
 end
 

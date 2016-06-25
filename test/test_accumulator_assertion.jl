@@ -50,4 +50,31 @@ end
     @test isfinalized(ta) == false
 end
 
+@testset "setting/getting options" begin
+    @testset "no options set" begin
+        ta = AccumulatorAssertion(got_one_value, Set{Any}())
+        @test file(ta) == "<unknown file>"
+        @test line(ta) == "<unknown line>"
+        @test shouldskip(ta) == false
+        @test isbroken(ta) == false
+    end
+
+    @testset "file and line options set" begin
+        ta = AccumulatorAssertion(got_one_value, Set{Any}())
+        set_options(ta, Dict(:file => "myfile.jl", :line => 14))
+        @test file(ta) == "myfile.jl"
+        @test line(ta) == 14
+        @test shouldskip(ta) == false
+        @test isbroken(ta) == false
+    end
+
+    @testset "file and skip options set" begin
+        ta = AccumulatorAssertion(got_one_value, Set{Any}())
+        set_options(ta, Dict(:file => "myfile.jl", :skip => true))
+        @test file(ta) == "myfile.jl"
+        @test line(ta) == "<unknown line>"
+        @test shouldskip(ta) == true
+        @test isbroken(ta) == false
+    end
+end
 end
