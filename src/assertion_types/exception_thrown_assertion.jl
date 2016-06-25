@@ -1,5 +1,7 @@
 type ExceptionThrownAssertion <: TestAssertion
     exceptiontype::DataType
+    options::AssertionOptions
+    ExceptionThrownAssertion(extype::DataType) = new(extype, empty_assertion_options())
 end
 
 """ It is a failure if a value is returned since we are expecting an exception. """

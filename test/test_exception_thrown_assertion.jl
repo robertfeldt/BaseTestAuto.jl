@@ -23,4 +23,32 @@ end
     @test isa(o, Fail)
 end
 
+@testset "setting/getting options" begin
+    @testset "no options set" begin
+        ta = ExceptionThrownAssertion(ArgumentError)
+        @test file(ta) == "<unknown file>"
+        @test line(ta) == "<unknown line>"
+        @test shouldskip(ta) == false
+        @test isbroken(ta) == false
+    end
+
+    @testset "file and line options set" begin
+        ta = ExceptionThrownAssertion(ArgumentError)
+        set_options(ta, Dict(:file => "mytestfile.jl", :line => 17))
+        @test file(ta) == "mytestfile.jl"
+        @test line(ta) == 17
+        @test shouldskip(ta) == false
+        @test isbroken(ta) == false
+    end
+
+    @testset "file and broken options set" begin
+        ta = ExceptionThrownAssertion(ArgumentError)
+        set_options(ta, Dict(:file => "myfile.jl", :broken => true))
+        @test file(ta) == "myfile.jl"
+        @test line(ta) == "<unknown line>"
+        @test shouldskip(ta) == false
+        @test isbroken(ta) == true
+    end
+end
+
 end
